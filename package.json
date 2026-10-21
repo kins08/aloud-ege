@@ -1,0 +1,10 @@
+{
+  "name": "aloud-ege-speaking",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "ALOUD — персональный тренажёр устного задания 1 ЕГЭ по английскому",
+  "scripts": {
+    "start": "node server.js"
+  }
+}
