@@ -172,8 +172,35 @@ export function downloadExport() {
   setTimeout(() => URL.revokeObjectURL(url), 2000);
 }
 
-const audioUrls = new Map();
+function mergeById(incoming, existing, limit) {
+  const merged = [];
+  const seen = new Set();
+  for (const item of [...incoming, ...existing]) {
+    if (!item || typeof item.id !== 'string' || seen.has(item.id)) continue;
+    seen.add(item.id);
+    merged.push(item);
+  }
+  merged.sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+  return merged.slice(0, limit);
+}
 
+export function importData(payload) {
+  if (!payload || payload.app !== 'ALOUD') throw new Error('Не похоже на резервную копию ALOUD');
+  const saved = payload.settings || {};
+  const current = getSettings();
+  saveSettings({
+    name: typeof saved.name === 'string' ? saved.name : current.name,
+    asrLang: saved.asrLang === 'en-US' ? 'en-US' : current.asrLang
+  });
+  const reports = mergeById(Array.isArray(payload.reports) ? payload.reports : [], getReports(), REPORT_LIMIT);
+  const customTexts = mergeById(Array.isArray(payload.customTexts) ? payload.customTexts : [], getCustomTexts(), 40);
+  writeJSON('reports', reports);
+  writeJSON('customTexts', customTexts);
+  if (Array.isArray(payload.checklist)) writeJSON('checklist', payload.checklist);
+  return { reports: reports.length, customTexts: customTexts.length };
+}
+
+const audioUrls = new Map();
 export function cacheAudio(reportId, url) {
   if (!url) return;
   const previous = audioUrls.get(reportId);

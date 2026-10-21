@@ -1,6 +1,6 @@
 import {
   getSettings, saveSettings, getReports, getCustomTexts,
-  downloadExport, clearReports, clearAllData
+  downloadExport, importData, clearReports, clearAllData
 } from '../store.js';
 import { VERSION } from '../data/sources.js';
 import { esc, icon, toast, confirmDialog } from '../ui.js';
@@ -110,6 +110,9 @@ export function render(root) {
           </div>
           <button class="btn btn--ghost btn--block mt-16" type="button" id="exportBtn">${icon('download', 'icon--sm')}Скачать резервную копию</button>
           <p class="field-note mt-8">JSON без API-ключа: настройки, отчёты, свои тексты и чек-лист.</p>
+          <label class="btn btn--ghost btn--block mt-8" for="importFile">${icon('upload', 'icon--sm')}Загрузить из копии</label>
+          <input id="importFile" type="file" accept="application/json,.json" hidden>
+          <p class="field-note mt-8">Переносит отчёты и свои тексты в этот браузер, не стирая существующие. Ключ AI-наставника в файле нет — его вводить заново.</p>
         </div>
 
         <div class="form-card danger-zone">
@@ -180,6 +183,19 @@ export function render(root) {
   root.querySelector('#exportBtn').addEventListener('click', () => {
     downloadExport();
     toast('Резервная копия скачана без API-ключа.', 'success');
+  });
+
+  root.querySelector('#importFile').addEventListener('change', async event => {
+    const file = event.target.files[0];
+    event.target.value = '';
+    if (!file) return;
+    try {
+      const summary = importData(JSON.parse(await file.text()));
+      toast(`Загружено: ${summary.reports} отчётов, ${summary.customTexts} своих текстов.`, 'success');
+      render(root);
+    } catch {
+      toast('Файл не читается: нужен JSON из резервной копии ALOUD.', 'error');
+    }
   });
 
   root.querySelector('#clearReportsBtn').addEventListener('click', async () => {
